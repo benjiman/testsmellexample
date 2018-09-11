@@ -1,7 +1,6 @@
 package com.benjiweber.example;
 
 import org.junit.Test;
-
 import java.time.LocalDate;
 
 import static org.junit.Assert.*;
@@ -10,83 +9,50 @@ public class BookingNotificationTest {
 
     @Test
     public void sendsBookingConfirmationEmail() {
-        var emailSender = new EmailSender() {
-            String message;
-            String to;
 
-            public void sendEmail(String to, String message) {
-                this.to = to;
-                this.message = message;
-            }
+        AccountManagers dummyAllocation = customer -> new AccountManager("Bob Smith");
+        Clock stoppedClock = () -> LocalDate.parse("2000-01-01");
 
-            public void sendHtmlEmail(String to, String message) {
-
-            }
-
-            public int queueSize() {
-                return 0;
-            }
-        };
-
-        var support = new Support() {
-            @Override
-            public AccountManager accountManagerFor(Customer customer) {
-                return new AccountManager("Bob Smith");
-            }
-
-            @Override
-            public void calculateSupportRota() {
-
-            }
-
-            @Override
-            public AccountManager superviserFor(AccountManager accountManager) {
-                return null;
-            }
-        };
-
-
-        BookingNotifier bookingNotifier = new BookingNotifier(emailSender, support);
+        BookingNotificationTemplate bookingNotifier = new BookingNotificationTemplate(dummyAllocation, stoppedClock);
 
         Customer customer = new Customer("jane@example.com", "Jane", "Jones");
-        bookingNotifier.sendBookingConfirmation(customer, new Service("Best Service Ever"));
 
-        assertEquals("Should sernd email to customer", customer.email, emailSender.to);
         assertEquals(
             "Should compose correct email",
-            emailSender.message,
-            "Dear Jane Jones, you have successfully booked Best Service Ever on " + LocalDate.now() + ". Your account manager is Bob Smith"
+             bookingNotifier.composeBookingEmail(customer, new Service("Best Service Ever")),
+            "Dear Jane Jones, you have successfully booked Best Service Ever on 2000-01-01. Your account manager is Bob Smith"
         );
 
     }
 
 
-    static class BookingNotifier {
+    static class BookingNotificationTemplate {
 
-        private EmailSender emailSender;
-        private Support support;
+        private AccountManagers support;
+        private Clock clock;
 
-        public BookingNotifier(EmailSender emailSender, Support support) {
-            this.emailSender = emailSender;
+        public BookingNotificationTemplate(AccountManagers support, Clock clock) {
             this.support = support;
+            this.clock = clock;
         }
 
-        public void sendBookingConfirmation(Customer customer, Service service) {
-            emailSender.sendEmail(
-                customer.email,
-                "Dear " + customer.firstname + " " + customer.lastname +
-                ", you have successfully booked " + service.name + " on " + LocalDate.now() +
-                ". Your account manager is " + support.accountManagerFor(customer).name
-            );
-
-
+        public String composeBookingEmail(Customer customer, Service service) {
+            return "Dear " + customer.firstname + " " + customer.lastname +
+                ", you have successfully booked " + service.name + " on " + clock.now() +
+                ". Your account manager is " + support.accountManagerFor(customer).name;
         }
-
 
     }
 
-    interface Support {
+    interface Clock {
+        LocalDate now();
+    }
+
+    interface AccountManagers {
         AccountManager accountManagerFor(Customer customer);
+    }
+
+    interface Support extends AccountManagers {
         void calculateSupportRota();
         AccountManager superviserFor(AccountManager accountManager);
     }
