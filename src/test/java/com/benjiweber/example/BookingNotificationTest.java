@@ -8,7 +8,7 @@ import static org.junit.Assert.*;
 public class BookingNotificationTest {
 
     @Test
-    public void sendsBookingConfirmationEmail() {
+    public void composesBookingConfirmationEmail() {
 
         AccountManagers dummyAllocation = customer -> new AccountManager("Bob Smith");
         Clock stoppedClock = () -> LocalDate.parse("2000-01-01");
