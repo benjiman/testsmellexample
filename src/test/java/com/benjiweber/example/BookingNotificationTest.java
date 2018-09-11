@@ -1,61 +1,41 @@
 package com.benjiweber.example;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mockito;
+import org.powermock.api.mockito.PowerMockito;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.time.LocalDate;
 
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.powermock.api.mockito.PowerMockito.mockStatic;
 
+@RunWith(PowerMockRunner.class)
+@PrepareForTest(fullyQualifiedNames = {"com.benjiweber.example.BookingNotificationTest.*"})
 public class BookingNotificationTest {
 
     @Test
-    public void sendsBookingConfirmationEmail() {
-        var emailSender = new EmailSender() {
-            String message;
-            String to;
-
-            public void sendEmail(String to, String message) {
-                this.to = to;
-                this.message = message;
-            }
-
-            public void sendHtmlEmail(String to, String message) {
-
-            }
-
-            public int queueSize() {
-                return 0;
-            }
-        };
-
-        var support = new Support() {
-            @Override
-            public AccountManager accountManagerFor(Customer customer) {
-                return new AccountManager("Bob Smith");
-            }
-
-            @Override
-            public void calculateSupportRota() {
-
-            }
-
-            @Override
-            public AccountManager superviserFor(AccountManager accountManager) {
-                return null;
-            }
-        };
-
+    public void sendsBookingConfirmationEmail() throws Exception {
+        var emailSender = mock(EmailSender.class);
+        var support = mock(Support.class);
 
         BookingNotifier bookingNotifier = new BookingNotifier(emailSender, support);
 
+        LocalDate expectedDate = LocalDate.parse("2000-01-01");
         Customer customer = new Customer("jane@example.com", "Jane", "Jones");
+        when(support.accountManagerFor(customer)).thenReturn(new AccountManager("Bob Smith"));
+        mockStatic(LocalDate.class, args -> expectedDate);
+
         bookingNotifier.sendBookingConfirmation(customer, new Service("Best Service Ever"));
 
-        assertEquals("Should sernd email to customer", customer.email, emailSender.to);
-        assertEquals(
-            "Should compose correct email",
-            emailSender.message,
-            "Dear Jane Jones, you have successfully booked Best Service Ever on " + LocalDate.now() + ". Your account manager is Bob Smith"
+        verify(emailSender).sendEmail(
+            customer.email,
+            "Dear Jane Jones, you have successfully booked Best Service Ever on 2000-01-01. Your account manager is Bob Smith"
         );
 
     }
