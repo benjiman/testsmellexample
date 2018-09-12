@@ -1,5 +1,6 @@
 package com.benjiweber.wiring;
 
+import java.io.File;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -15,7 +16,7 @@ public class Main {
         var eventStore = new InfluxDbEventStore(credentialStore);
 
         var probeStatusReporter = new ProbeStatusReporter(eventStore);
-        var probeExecutor = new ProbeExecutor(new ScheduledThreadPoolExecutor(2), probeStatusReporter, credentialStore);
+        var probeExecutor = new ProbeExecutor(new ScheduledThreadPoolExecutor(2), probeStatusReporter, credentialStore, new ProbeConfiguration(new File("/etc/probes.conf")));
 
         var alertingRules = new AlertingRules(new OnCallRota(new PostgresRotaPersistence(), LocalDateTime::now), eventStore, probeStatusReporter)
 
@@ -39,8 +40,14 @@ public class Main {
         }
     }
 
+    static class ProbeConfiguration {
+        public ProbeConfiguration(File file) {
+
+        }
+    }
+
     static class ProbeExecutor {
-        public ProbeExecutor(ScheduledThreadPoolExecutor scheduledThreadPoolExecutor, ProbeStatusReporter probeStatusReporter, CredentialStore credentialStore) {
+        public ProbeExecutor(ScheduledThreadPoolExecutor scheduledThreadPoolExecutor, ProbeStatusReporter probeStatusReporter, CredentialStore credentialStore, ProbeConfiguration probeConfiguration) {
 
         }
     }
